@@ -10,12 +10,9 @@ template<typename Func, typename Key>
 struct function_property_map {
   typedef Key                                           key_type;
   typedef typename std::result_of<Func(key_type)>::type reference;
-
   typedef 
     typename std::remove_const<typename std::remove_reference<reference>::type>::type 
   value_type;
-
-
   typedef boost::readable_property_map_tag              category;
 
   function_property_map(Func f = Func()) : f(f) {}
