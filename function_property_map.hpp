@@ -13,8 +13,9 @@
 #ifndef FUNCTION_PROPERTY_MAP_H
 #define FUNCTION_PROPERTY_MAP_H
 
+#include <boost/config.hpp>
 #include <boost/property_map/property_map.hpp>
-#include <type_traits>
+#include <boost/type_traits.hpp>
 
 namespace util {
 
@@ -23,7 +24,7 @@ struct function_property_map {
   typedef Key                                           key_type;
   typedef typename std::result_of<Func(key_type)>::type reference;
   typedef 
-    typename std::remove_const<typename std::remove_reference<reference>::type>::type 
+    typename boost::remove_const<typename boost::remove_reference<reference>::type>::type 
   value_type;
   typedef boost::readable_property_map_tag              category;
 
