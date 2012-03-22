@@ -1,11 +1,13 @@
 #include "function_property_map.hpp"
 
 struct functor_const {
+  typedef int result_type;
   int operator()(int i) const { return i + 23; }
 };
 
 struct functor_mutable {
   functor_mutable() : i(0) {}
+  typedef int result_type;
   int operator()(int x) { return ++i + x; }
   int i;
 };
@@ -13,12 +15,12 @@ struct functor_mutable {
 int main()
 {
   {
-    util::function_property_map<functor_const, int> functor_map{functor_const()};
+    util::function_property_map<functor_const, int> functor_map((functor_const()));
     get(functor_map, 4);
   }
 
   {
-    util::function_property_map<functor_mutable, int> functor_map{functor_mutable()};
+    util::function_property_map<functor_mutable, int> functor_map((functor_mutable()));
     get(functor_map, 4);
   }
   return 0;
