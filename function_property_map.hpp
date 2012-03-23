@@ -10,69 +10,37 @@
 //=======================================================================
 //
 
-#ifndef FUNCTION_PROPERTY_MAP_H
-#define FUNCTION_PROPERTY_MAP_H
+#ifndef BOOST_PROPERTY_MAP_FUNCTION_PROPERTY_MAP_H
+#define BOOST_PROPERTY_MAP_FUNCTION_PROPERTY_MAP_H
 
 #include <boost/config.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <boost/type_traits.hpp>
-
-
-// This should also use !defined(BOOST_NO_0X_HDR_TYPE_TRAITS) but
-// boost/config.hpp considers it unusable. We make the assumption that
-// every compiler with decltype has type_traits, which is a little
-// over-eager
-#if !defined(BOOST_NO_DECLTYPE)
-#include <type_traits>
-#else
 #include <boost/utility/result_of.hpp>
-#endif
+#include <boost/mpl/and.hpp>
+#include <boost/mpl/not.hpp>
+#include <utility>
 
-namespace util {
+namespace boost {
 
-namespace detail {
-struct deduce_tag {};
-} // detail
-
-template<typename Func
-         , typename Key
-#if defined(BOOST_NO_DECLTYPE)
-         // Ret can still be provided for situations where neither
-         // inference nor compliance with boost::result_of is possible
-         , typename Ret = detail::deduce_tag
-#endif
-         >
-struct function_property_map {
+template<typename Func, typename Key, typename Ret = typename boost::result_of<Func(Key)>::type>
+class function_property_map: public put_get_helper<Ret, function_property_map<Func, Key, Ret> > {
+  public:
   typedef Key key_type;
-#if !defined(BOOST_NO_DECLTYPE)
-  typedef typename std::result_of<Func(key_type)>::type reference;
-#else
-  typedef typename boost::mpl::if_< 
-    typename boost::is_same< Ret, detail::deduce_tag >::type
-      , typename boost::result_of<Func(key_type)>::type
-      , Ret 
-    >::type reference;
-#endif
+  typedef Ret reference;
+  typedef typename boost::remove_cv<typename boost::remove_reference<Ret>::type>::type value_type;
 
-  typedef 
-    typename boost::remove_const<
-      typename boost::remove_reference<reference>::type
-    >::type 
-  value_type;
-
-  typedef boost::readable_property_map_tag              category;
+  typedef typename boost::mpl::if_<
+                     boost::mpl::and_<
+                       boost::is_reference<Ret>,
+                       boost::mpl::not_<boost::is_const<Ret> >
+                     >,
+                     boost::lvalue_property_map_tag,
+                     boost::readable_property_map_tag>::type
+    category;
 
   function_property_map(Func f = Func()) : f(f) {}
 
-#if !defined(BOOST_NO_RVALUE_REFERENCES)
-  reference operator[](Key&& k) const {
-    return f(std::forward<Key>(k));
-  }
-
-  reference operator[](Key&& k) {
-    return f(std::forward<Key>(k));
-  }
-#else
   reference operator[](const Key& k) const {
     return f(k);
   }
@@ -80,37 +48,23 @@ struct function_property_map {
   reference operator[](const Key& k) {
     return f(k);
   }
-#endif
 
+  private:
   Func f;
 };
 
-template<typename Func, typename Key>
-typename boost::property_traits< function_property_map<Func, Key> >::reference
-#if !defined(BOOST_NO_RVALUE_REFERENCES)
-get(function_property_map<Func, Key> const& m, Key&& k) 
-{ return m[std::forward<Key>(k)]; }
-#else
-get(function_property_map<Func, Key> const& m, const Key& k) 
-{ return m[k]; }
-#endif
-
-
-template<typename Func, typename Key>
-typename boost::property_traits< function_property_map<Func, Key> >::reference
-#if !defined(BOOST_NO_RVALUE_REFERENCES)
-get(function_property_map<Func, Key>& m, Key&& k) 
-{ return m[std::forward<Key>(k)]; }
-#else
-get(function_property_map<Func, Key>& m, const Key& k) 
-{ return m[k]; }
-#endif
-
-
 template<typename Key, typename Func>
 function_property_map<Func, Key>
-make_function_property_map(Func f) { return function_property_map<Func, Key>(f); }
+make_function_property_map(const Func& f) {
+  return function_property_map<Func, Key>(f);
+}
 
-} // util
+template<typename Key, typename Ret, typename Func>
+function_property_map<Func, Key, Ret>
+make_function_property_map(const Func& f) {
+  return function_property_map<Func, Key, Ret>(f);
+}
 
-#endif /* FUNCTION_PROPERTY_MAP_H */
+} // boost
+
+#endif /* BOOST_PROPERTY_MAP_FUNCTION_PROPERTY_MAP_H */
